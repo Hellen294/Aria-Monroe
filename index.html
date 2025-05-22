@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aria Monroe - Official Website</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Open+Sans&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Open Sans', sans-serif;
+      background-color: #fdfdfd;
+      color: #222;
+    }
+
+    header {
+      background: url("https://picsum.photos/id/1005/1600/400") no-repeat center center/cover;
+      height: 400px;
+      display: flex;
+      align-items: flex-end;
+      padding: 20px;
+      color: white;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      margin: 0;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
+    }
+
+    nav {
+      background-color: #111;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    nav a {
+      color: white;
+      margin: 0 15px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: #f39c12;
+    }
+
+    section {
+      padding: 40px 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .bio {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .bio img {
+      max-width: 300px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .bio-text {
+      flex: 1;
+    }
+
+    .gallery, .videos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .gallery img, .videos video {
+      width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    }
+
+    footer {
+      background-color: #222;
+      color: #ccc;
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+    }
+
+    .socials a {
+      margin: 0 10px;
+      color: #ccc;
+      text-decoration: none;
+      font-size: 20px;
+    }
+
+    .socials a:hover {
+      color: #f39c12;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 32px;
+      }
+
+      .bio {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .bio img {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Aria Monroe</h1>
+  </header>
+
+  <nav>
+    <a href="#bio">About</a>
+    <a href="#gallery">Gallery</a>
+    <a href="#videos">Videos</a>
+    <a href="#contact">Contact</a>
+  </nav>
+
+  <section id="bio">
+    <h2>About Aria</h2>
+    <div class="bio">
+      <img src="https://picsum.photos/id/237/300/400" alt="Aria Monroe Portrait" />
+      <div class="bio-text">
+        <p><strong>Aria Monroe</strong> is an award-winning actress, singer, and humanitarian known for her powerful voice and mesmerizing performances on screen and stage.</p>
+        <p>Her career began at the age of 14 with a breakout role in a Broadway production. Since then, she has starred in over 20 films and released three critically acclaimed albums.</p>
+        <p>Outside her career, Aria advocates for women's rights and global education for children. She's been recognized by several international organizations for her philanthropy.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <h2>Photo Gallery</h2>
+    <div class="gallery">
+      <img src="https://picsum.photos/id/1011/400/300" alt="Gallery Image 1" />
+      <img src="https://picsum.photos/id/1012/400/300" alt="Gallery Image 2" />
+      <img src="https://picsum.photos/id/1013/400/300" alt="Gallery Image 3" />
+      <img src="https://picsum.photos/id/1015/400/300" alt="Gallery Image 4" />
+    </div>
+  </section>
+
+  <section id="videos">
+    <h2>Watch Aria</h2>
+    <div class="videos">
+      <video controls>
+        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <video controls>
+        <source src="https://www.w3schools.com/html/movie.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </section>
+
+  <section id="contact">
+    <h2>Contact & Socials</h2>
+    <p>For press inquiries, bookings, or fan mail, please contact: <strong>aria@monroeentertainment.com</strong></p>
+    <div class="socials">
+      <a href="#">Instagram</a>
+      <a href="#">Twitter</a>
+      <a href="#">YouTube</a>
+    </div>
+  </section>
+
+  <footer>
+    &copy; 2025 Aria Monroe. All rights reserved.
+  </footer>
+
+</body>
+</html>
