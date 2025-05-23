@@ -25,8 +25,8 @@
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 15px;
-    cursor: pointer;
     transition: background 0.3s;
+    position: relative;
   }
   .callItem:hover {
     background: #4a5e9a;
@@ -35,7 +35,7 @@
     font-weight: bold;
     font-size: 1.1em;
   }
-  .callRequest {
+  .callReason {
     margin: 5px 0;
     font-style: italic;
     color: #cfd6ff;
@@ -56,15 +56,35 @@
   .ended {
     background: #c0392b;
   }
+  .buttons {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+  }
+  .buttons button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+  .joinBtn {
+    background: #2980b9;
+    color: white;
+  }
+  .deleteBtn {
+    background: #e74c3c;
+    color: white;
+  }
 </style>
 </head>
 <body>
-  <h1>Craven Laura - Incoming Calls</h1>
-  <div id="callsList">Loading calls...</div>
+<h1>Craven Laura - Incoming Calls</h1>
+<div id="callsList">Loading calls...</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-  import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+  import { getFirestore, collection, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDzWe0sMFecKa9sHk30pXat5qrT4yDyuJ4",
@@ -78,68 +98,78 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const callsRef = collection(db, "calls");
+  const callsList = document.getElementById("callsList");
 
-  const callsCollection = collection(db, "calls");
-  const callsList = document.getElementById('callsList');
+  function renderCallItem(callId, data) {
+    const div = document.createElement("div");
+    div.className = "callItem";
 
-  function renderCallItem(callId, callData) {
-    const div = document.createElement('div');
-    div.className = 'callItem';
+    const name = document.createElement("div");
+    name.className = "callName";
+    name.textContent = data.name || "Unknown Caller";
 
-    const name = document.createElement('div');
-    name.className = 'callName';
-    name.textContent = callData.name || 'Unknown Caller';
+    const reason = document.createElement("div");
+    reason.className = "callReason";
+    reason.textContent = data.reason || "No reason provided";
 
-    const request = document.createElement('div');
-    request.className = 'callRequest';
-    request.textContent = callData.request || 'No request provided';
-
-    const status = document.createElement('span');
-    status.className = 'status';
-    if (!callData.answer) {
-      status.textContent = 'Waiting';
-      status.classList.add('waiting');
-    } else if (callData.ended) {
-      status.textContent = 'Ended';
-      status.classList.add('ended');
+    const status = document.createElement("span");
+    status.className = "status";
+    if (!data.answer) {
+      status.textContent = "Waiting";
+      status.classList.add("waiting");
+    } else if (data.ended) {
+      status.textContent = "Ended";
+      status.classList.add("ended");
     } else {
-      status.textContent = 'Connected';
-      status.classList.add('connected');
+      status.textContent = "Connected";
+      status.classList.add("connected");
     }
 
-    div.appendChild(name);
-    div.appendChild(request);
-    div.appendChild(status);
+    const buttons = document.createElement("div");
+    buttons.className = "buttons";
 
-    div.onclick = () => {
-      if (!callData.ended) {
-        window.open(`video-room.html?callId=${callId}`, '_blank');
-      } else {
-        alert('This call has ended.');
+    const joinBtn = document.createElement("button");
+    joinBtn.textContent = "Join";
+    joinBtn.className = "joinBtn";
+    joinBtn.onclick = () => {
+      window.open(`video-room.html?callId=${callId}`, "_blank");
+    };
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.className = "deleteBtn";
+    deleteBtn.onclick = async () => {
+      if (confirm("Delete this call log?")) {
+        await deleteDoc(doc(db, "calls", callId));
       }
     };
+
+    buttons.appendChild(joinBtn);
+    buttons.appendChild(deleteBtn);
+
+    div.appendChild(name);
+    div.appendChild(reason);
+    div.appendChild(status);
+    div.appendChild(buttons);
 
     return div;
   }
 
-  function updateCallsList(snapshot) {
-    callsList.innerHTML = '';
+  onSnapshot(callsRef, (snapshot) => {
+    callsList.innerHTML = "";
     if (snapshot.empty) {
-      callsList.textContent = 'No current calls.';
+      callsList.textContent = "No current calls.";
       return;
     }
-    snapshot.forEach(docSnap => {
+
+    snapshot.forEach((docSnap) => {
       const callId = docSnap.id;
       const callData = docSnap.data();
-      const callItem = renderCallItem(callId, callData);
-      callsList.appendChild(callItem);
+      const item = renderCallItem(callId, callData);
+      callsList.appendChild(item);
     });
-  }
-
-  onSnapshot(callsCollection, snapshot => {
-    updateCallsList(snapshot);
   });
-
 </script>
 </body>
 </html>
