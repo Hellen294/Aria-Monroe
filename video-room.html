@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Video Call with Craven Laura</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; height: 100%; background: linear-gradient(to right, #1e3c72, #2a5298);
+    font-family: Arial, sans-serif;
+    color: white;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  #videos {
+    display: flex;
+    gap: 10px;
+    width: 90%;
+    max-width: 900px;
+    justify-content: center;
+  }
+  video {
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    width: 45%;
+    max-height: 400px;
+    background-color: black;
+  }
+  #status {
+    margin: 20px;
+    font-size: 1.2em;
+  }
+  #endCall {
+    padding: 10px 20px;
+    font-size: 1.1em;
+    border: none;
+    border-radius: 8px;
+    background-color: #f39c12;
+    color: white;
+    cursor: pointer;
+    margin-top: 15px;
+  }
+  #endCall:hover {
+    background-color: #e67e22;
+  }
+</style>
+</head>
+<body>
+  <h2>Video Call with Craven Laura</h2>
+  <div id="status">Connecting...</div>
+  <div id="videos">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+  </div>
+  <button id="endCall">End Call</button>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+  // Firebase config (replace with your config)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzWe0sMFecKa9sHk30pXat5qrT4yDyuJ4",
+      authDomain: "soccer2-c47c2.firebaseapp.com",
+      databaseURL: "https://soccer2-c47c2-default-rtdb.firebaseio.com",
+      projectId: "soccer2-c47c2",
+      storageBucket: "soccer2-c47c2.appspot.com",
+      messagingSenderId: "942310698005",
+      appId: "1:942310698005:web:2f5230da671ef0b47db21c"
+    };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Simple WebRTC signaling using Firestore
+  let localStream = null;
+  let remoteStream = null;
+  let peerConnection = null;
+  const servers = {
+    iceServers: [
+      { urls: ["stun:stun.l.google.com:19302"] }
+    ]
+  };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const callId = urlParams.get('callId');
+
+  if (!callId) {
+    alert('Call ID missing. Cannot proceed.');
+    throw new Error('Call ID missing');
+  }
+
+  const callDoc = doc(db, 'calls', callId);
+  const offerCandidates = collection(callDoc, 'offerCandidates');
+  const answerCandidates = collection(callDoc, 'answerCandidates');
+
+  const localVideo = document.getElementById('localVideo');
+  const remoteVideo = document.getElementById('remoteVideo');
+  const status = document.getElementById('status');
+  const endCallBtn = document.getElementById('endCall');
+
+  async function startCall() {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    remoteStream = new MediaStream();
+
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+    peerConnection.ontrack = event => {
+      event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+    };
+
+    localVideo.srcObject = localStream;
+    remoteVideo.srcObject = remoteStream;
+
+    // Create offer
+    const offerDescription = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offerDescription);
+
+    const offer = {
+      sdp: offerDescription.sdp,
+      type: offerDescription.type
+    };
+
+    await setDoc(callDoc, { offer });
+
+    // Listen for answer
+    onSnapshot(callDoc, (snapshot) => {
+      const data = snapshot.data();
+      if (!peerConnection.currentRemoteDescription && data?.answer) {
+        const answerDescription = new RTCSessionDescription(data.answer);
+        peerConnection.setRemoteDescription(answerDescription);
+        status.textContent = 'Connected';
+      }
+    });
+
+    // Listen for remote ICE candidates
+    onSnapshot(answerCandidates, (snapshot) => {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const candidate = new RTCIceCandidate(change.doc.data());
+          peerConnection.addIceCandidate(candidate);
+        }
+      });
+    });
+  }
+
+  async function answerCall() {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    remoteStream = new MediaStream();
+
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+    peerConnection.ontrack = event => {
+      event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+    };
+
+    localVideo.srcObject = localStream;
+    remoteVideo.srcObject = remoteStream;
+
+    const callData = (await callDoc.get()).data();
+    const offerDescription = callData.offer;
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(offerDescription));
+
+    const answerDescription = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answerDescription);
+
+    const answer = {
+      type: answerDescription.type,
+      sdp: answerDescription.sdp
+    };
+
+    await updateDoc(callDoc, { answer });
+
+    // Listen for offer ICE candidates
+    onSnapshot(offerCandidates, (snapshot) => {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const candidate = new RTCIceCandidate(change.doc.data());
+          peerConnection.addIceCandidate(candidate);
+        }
+      });
+    });
+  }
+
+  peerConnection = new RTCPeerConnection(servers);
+
+  peerConnection.onicecandidate = event => {
+    if (!event.candidate) return;
+    const candidate = event.candidate.toJSON();
+
+    // Check if we are caller or answerer
+    callDoc.get().then(snapshot => {
+      if (!snapshot.exists()) return;
+      const data = snapshot.data();
+      if (!data.answer) {
+        // caller
+        addDoc(offerCandidates, candidate);
+      } else {
+        // answerer
+        addDoc(answerCandidates, candidate);
+      }
+    });
+  };
+
+  // Determine if this user is caller or callee by checking Firestore document
+  const snapshot = await getDoc(callDoc);
+  if (!snapshot.exists()) {
+    // no call doc yet => create offer
+    startCall();
+  } else {
+    const data = snapshot.data();
+    if (data.answer) {
+      status.textContent = 'Call already connected';
+    } else {
+      answerCall();
+    }
+  }
+
+  endCallBtn.onclick = () => {
+    // Cleanup streams and connection
+    localStream?.getTracks().forEach(t => t.stop());
+    remoteStream?.getTracks().forEach(t => t.stop());
+    peerConnection.close();
+    status.textContent = 'Call ended';
+    window.location.href = 'call.html';
+  };
+</script>
+</body>
+</html>

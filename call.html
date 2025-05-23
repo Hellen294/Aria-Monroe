@@ -1,0 +1,87 @@
+<!-- call.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Call Craven Laura</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background: linear-gradient(to bottom right, #1e3c72, #2a5298);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    form {
+      background: rgba(255,255,255,0.1);
+      padding: 30px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      max-width: 400px;
+      width: 100%;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+    }
+    button {
+      background: #f39c12;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #e67e22;
+    }
+  </style>
+</head>
+<body>
+  <form id="callForm">
+    <h2>Call Craven Laura</h2>
+    <input type="text" placeholder="Your Name" id="name" required />
+    <input type="email" placeholder="Your Email" id="email" required />
+    <textarea placeholder="Reason for Call" id="reason" required></textarea>
+    <button type="submit">Start Call</button>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import { getFirestore, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzWe0sMFecKa9sHk30pXat5qrT4yDyuJ4",
+      authDomain: "soccer2-c47c2.firebaseapp.com",
+      databaseURL: "https://soccer2-c47c2-default-rtdb.firebaseio.com",
+      projectId: "soccer2-c47c2",
+      storageBucket: "soccer2-c47c2.appspot.com",
+      messagingSenderId: "942310698005",
+      appId: "1:942310698005:web:2f5230da671ef0b47db21c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    document.getElementById("callForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const reason = document.getElementById("reason").value;
+
+      const docRef = await addDoc(collection(db, "calls"), {
+        name,
+        email,
+        reason,
+        timestamp: serverTimestamp()
+      });
+
+      window.location.href = `video-room.html?callId=${docRef.id}`;
+    });
+  </script>
+</body>
+</html>
