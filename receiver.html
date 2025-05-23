@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head><title>Receiver</title></head>
+<body>
+  <h2>Receiver</h2>
+  <video id="localVideo" autoplay muted playsinline></video>
+  <video id="remoteVideo" autoplay playsinline></video>
+  <button onclick="answerCall()">Answer Call</button>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="firebase.js"></script>
+
+  <script>
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const callId = 'call123';
+    let localStream;
+    let pc = new RTCPeerConnection();
+
+    async function answerCall() {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      localVideo.srcObject = localStream;
+
+      pc.onicecandidate = e => {
+        if (e.candidate) {
+          database.ref(`calls/${callId}/receiverCandidates`).push(e.candidate.toJSON());
+        }
+      };
+
+      pc.ontrack = e => {
+        remoteVideo.srcObject = e.streams[0];
+      };
+
+      const callData = (await database.ref(`calls/${callId}`).once('value')).val();
+      const offer = callData.offer;
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      database.ref(`calls/${callId}/answer`).set(answer);
+
+      database.ref(`calls/${callId}/callerCandidates`).on('child_added', snapshot => {
+        const candidate = new RTCIceCandidate(snapshot.val());
+        pc.addIceCandidate(candidate);
+      });
+    }
+  </script>
+</body>
+</html>
