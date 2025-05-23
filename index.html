@@ -1,20 +1,21 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Aria Monroe - Official Website</title>
+  <title>Craven Laura - Official Website</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Open+Sans&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      font-family: 'Open Sans', sans-serif;
-      background-color: #fdfdfd;
-      color: #222;
-    }
+body {
+  margin: 0;
+  font-family: 'Open Sans', sans-serif;
+  background: linear-gradient(to bottom right, #f7f9fc, #e0eafc); /* gradient background */
+  color: #222;
+}
 
     header {
-      background: url("https://picsum.photos/id/1005/1600/400") no-repeat center center/cover;
+      background: url("WhatsApp Image 2025-05-22 at 23.47.54_45eaa46a.jpg") no-repeat center center/cover;
       height: 400px;
       display: flex;
       align-items: flex-end;
@@ -82,6 +83,36 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.08);
     }
 
+    .bio, .achievements {
+      font-size: 18px;
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+
+    .slideshow-container {
+      position: relative;
+      width: 100%;
+      max-width: 1000px;
+      height: 400px;
+      margin: auto;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .slide {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+
+    .slide.active {
+      opacity: 1;
+    }
+
     footer {
       background-color: #222;
       color: #ccc;
@@ -89,7 +120,25 @@
       padding: 20px;
       font-size: 14px;
     }
+    .buttons {
+      text-align: center;
+      margin-top: 40px;
+    }
 
+    .buttons a {
+      text-decoration: none;
+      padding: 12px 24px;
+      background-color: #2c3e50;
+      color: white;
+      border-radius: 5px;
+      margin: 0 10px;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+
+    .buttons a:hover {
+      background-color: #1a252f;
+    }
     .socials a {
       margin: 0 10px;
       color: #ccc;
@@ -121,55 +170,70 @@
 <body>
 
   <header>
-    <h1>Aria Monroe</h1>
+    <h1>Craven Laura</h1>
   </header>
 
   <nav>
     <a href="#bio">About</a>
     <a href="#gallery">Gallery</a>
-    <a href="#videos">Videos</a>
     <a href="#contact">Contact</a>
   </nav>
 
   <section id="bio">
-    <h2>About Aria</h2>
+    <h2>About Craven</h2>
     <div class="bio">
-      <img src="https://picsum.photos/id/237/300/400" alt="Aria Monroe Portrait" />
+      <img src="WhatsApp Image 2025-05-22 at 23.47.55_4b7e3e37.jpg" alt="Aria Monroe Portrait" />
       <div class="bio-text">
-        <p><strong>Aria Monroe</strong> is an award-winning actress, singer, and humanitarian known for her powerful voice and mesmerizing performances on screen and stage.</p>
-        <p>Her career began at the age of 14 with a breakout role in a Broadway production. Since then, she has starred in over 20 films and released three critically acclaimed albums.</p>
-        <p>Outside her career, Aria advocates for women's rights and global education for children. She's been recognized by several international organizations for her philanthropy.</p>
-      </div>
+      <p>I’m <strong>Craven Laura</strong>, born and raised in the United States. I serve my country as a proud soldier, and I raise my child with courage and love as a single mom.</p>
+      <p>Through battles both on the front lines and in life, I’ve stood tall, shaped by strength, sacrifice, and unwavering love. My journey is not just about survival — it's about purpose, resilience, and legacy.</p>
+    </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Photo Slideshow</h2>
+    <div class="slideshow-container">
+      <img src="WhatsApp Image 2025-05-22 at 23.47.54_861aa5bd.jpg" class="slide active" alt="Slide 1">
+      <img src="WhatsApp Image 2025-05-22 at 23.47.57_b710efa5.jpg" class="slide" alt="Slide 2">
+      <img src="WhatsApp Image 2025-05-22 at 23.47.54_45eaa46a.jpg" class="slide" alt="Slide 3">
+      <img src="WhatsApp Image 2025-05-22 at 23.47.58_1c29d7dc.jpg" class="slide" alt="Slide 4">
+      <img src="WhatsApp Image 2025-05-22 at 23.47.55_8834aa06.jpg" class="slide" alt="Slide 5">
+      <img src="WhatsApp Image 2025-05-22 at 23.47.55_49f73b4a.jpg" class="slide" alt="Slide 6">
+      <img src="WhatsApp Image 2025-05-22 at 23.47.57_4c9e1478.jpg" class="slide" alt="Slide 7">
+      <img src="WhatsApp Image 2025-05-22 at 23.47.57_d2f231e9.jpg" class="slide" alt="Slide 8">
+    </div>
+  </section>
+
+  <section>
+    <h2>My Achievements</h2>
+    <div class="achievements">
+      <ul>
+        <li>💼 15+ years of military service</li>
+        <li>🏅 Recipient of the Bronze Star Medal</li>
+        <li>🎓 Advocate for veteran mothers and female soldiers</li>
+        <li>👩‍👦 Full-time single parent raising a brilliant son</li>
+      </ul>
     </div>
   </section>
 
   <section id="gallery">
     <h2>Photo Gallery</h2>
     <div class="gallery">
-      <img src="https://picsum.photos/id/1011/400/300" alt="Gallery Image 1" />
-      <img src="https://picsum.photos/id/1012/400/300" alt="Gallery Image 2" />
-      <img src="https://picsum.photos/id/1013/400/300" alt="Gallery Image 3" />
-      <img src="https://picsum.photos/id/1015/400/300" alt="Gallery Image 4" />
+      <img src="WhatsApp Image 2025-05-22 at 23.47.51_c5bab2f8.jpg" alt="Gallery Image 1" />
+      <img src="WhatsApp Image 2025-05-22 at 23.47.52_ef26d2db.jpg" alt="Gallery Image 2" />
+      <img src="WhatsApp Image 2025-05-22 at 23.47.53_14afa8c4.jpg" alt="Gallery Image 3" />
+      <img src="WhatsApp Image 2025-05-22 at 23.47.57_4c9e1478.jpg" alt="Gallery Image 4" />
     </div>
   </section>
 
-  <section id="videos">
-    <h2>Watch Aria</h2>
-    <div class="videos">
-      <video controls>
-        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-        Your browser does not support the video tag.
-      </video>
-      <video controls>
-        <source src="https://www.w3schools.com/html/movie.mp4" type="video/mp4">
-        Your browser does not support the video tag.
-      </video>
-    </div>
-  </section>
+  <div class="buttons">
+    <a href="call.html">📞 Call Craven</a>
+    <a href="video.html">📹 Video Call</a>
+  </div>
 
   <section id="contact">
     <h2>Contact & Socials</h2>
-    <p>For press inquiries, bookings, or fan mail, please contact: <strong>aria@monroeentertainment.com</strong></p>
+    <p>For press inquiries, bookings, or fan mail, please contact: <strong>craven784@monroeentertainment.com</strong></p>
     <div class="socials">
       <a href="#">Instagram</a>
       <a href="#">Twitter</a>
@@ -178,8 +242,18 @@
   </section>
 
   <footer>
-    &copy; 2025 Aria Monroe. All rights reserved.
+    &copy; 2025 Craven Laura. All rights reserved.
   </footer>
 
+  <script>
+    let currentIndex = 0;
+    const slides = document.querySelectorAll('.slide');
+
+    setInterval(() => {
+      slides[currentIndex].classList.remove('active');
+      currentIndex = (currentIndex + 1) % slides.length;
+      slides[currentIndex].classList.add('active');
+    }, 3000); // change every 3 seconds
+  </script>
 </body>
 </html>
