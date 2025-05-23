@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Video Call</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    video { width: 45%; margin: 10px; border: 1px solid #ccc; }
+    #callForm { margin-bottom: 20px; }
+    #callStatus { font-weight: bold; color: green; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>Student Video Call</h2>
+  <div id="callForm">
+    <input type="text" id="name" placeholder="Your Name" required><br>
+    <input type="email" id="email" placeholder="Your Email" required><br>
+    <textarea id="reason" placeholder="Reason for Call" required></textarea><br>
+    <button onclick="initiateCall()">Initiate Call</button>
+  </div>
+  <div id="callStatus"></div>
+  <video id="localVideo" autoplay muted></video>
+  <video id="remoteVideo" autoplay></video>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDzWe0sMFecKa9sHk30pXat5qrT4yDyuJ4",
+  authDomain: "soccer2-c47c2.firebaseapp.com",
+  databaseURL: "https://soccer2-c47c2-default-rtdb.firebaseio.com",
+  projectId: "soccer2-c47c2",
+  storageBucket: "soccer2-c47c2.appspot.com",
+  messagingSenderId: "942310698005",
+  appId: "1:942310698005:web:2f5230da671ef0b47db21c"
+};
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    let localStream;
+    let pc;
+    const callId = 'call123'; // Unique call ID
+
+    async function initiateCall() {
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const reason = document.getElementById('reason').value;
+
+      if (!name || !email || !reason) {
+        alert('Please fill in all fields.');
+        return;
+      }
+
+      document.getElementById('callStatus').innerText = 'Waiting for teacher to accept...';
+
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      document.getElementById('localVideo').srcObject = localStream;
+
+      pc = new RTCPeerConnection();
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          database.ref(`calls/${callId}/callerCandidates`).push(event.candidate.toJSON());
+        }
+      };
+
+      pc.ontrack = event => {
+        document.getElementById('remoteVideo').srcObject = event.streams[0];
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      database.ref(`calls/${callId}`).set({ offer, name, email, reason });
+
+      database.ref(`calls/${callId}/answer`).on('value', async snapshot => {
+        const answer = snapshot.val();
+        if (answer) {
+          await pc.setRemoteDescription(new RTCSessionDescription(answer));
+          document.getElementById('callStatus').innerText = 'Call in progress...';
+        }
+      });
+
+      database.ref(`calls/${callId}/receiverCandidates`).on('child_added', snapshot => {
+        const candidate = new RTCIceCandidate(snapshot.val());
+        pc.addIceCandidate(candidate);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teacher Video Call</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    video { width: 45%; margin: 10px; border: 1px solid #ccc; }
+    button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Teacher Dashboard</h2>
+  <ul id="callList"></ul>
+  <div id="callStatus"></div>
+  <video id="localVideo" autoplay muted playsinline></video>
+  <video id="remoteVideo" autoplay playsinline></video>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzWe0sMFecKa9sHk30pXat5qrT4yDyuJ4",
+      authDomain: "soccer2-c47c2.firebaseapp.com",
+      databaseURL: "https://soccer2-c47c2-default-rtdb.firebaseio.com",
+      projectId: "soccer2-c47c2",
+      storageBucket: "soccer2-c47c2.appspot.com",
+      messagingSenderId: "942310698005",
+      appId: "1:942310698005:web:2f5230da671ef0b47db21c"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const callList = document.getElementById('callList');
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    let pc;
+
+    // Listen for all new calls
+    db.ref('calls').on('child_added', (snapshot) => {
+      const callId = snapshot.key;
+      const callData = snapshot.val();
+      if (!callData.answer) {
+        const li = document.createElement('li');
+        li.textContent = `${callData.name} (${callData.email}): ${callData.reason}`;
+        const btn = document.createElement('button');
+        btn.textContent = "Join Call";
+        btn.onclick = () => joinCall(callId, callData.offer);
+        li.appendChild(btn);
+        callList.appendChild(li);
+      }
+    });
+
+    async function joinCall(callId, offer) {
+      document.getElementById('callStatus').innerText = 'Connecting...';
+
+      const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
+
+      pc = new RTCPeerConnection();
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          db.ref(`calls/${callId}/receiverCandidates`).push(event.candidate.toJSON());
+        }
+      };
+
+      pc.ontrack = event => {
+        remoteVideo.srcObject = event.streams[0];
+      };
+
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      db.ref(`calls/${callId}/answer`).set(answer);
+
+      db.ref(`calls/${callId}/callerCandidates`).on('child_added', snapshot => {
+        const candidate = new RTCIceCandidate(snapshot.val());
+        pc.addIceCandidate(candidate);
+      });
+
+      document.getElementById('callStatus').innerText = 'Call connected!';
+    }
+  </script>
+</body>
+</html>
