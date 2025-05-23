@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Craven Laura - Incoming Calls</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #2a3a55;
+    color: white;
+    margin: 0; padding: 20px;
+    min-height: 100vh;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  #callsList {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .callItem {
+    background: #374a75;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: background 0.3s;
+    position: relative;
+  }
+  .callItem:hover {
+    background: #4a5e9a;
+  }
+  .callName {
+    font-weight: bold;
+    font-size: 1.1em;
+  }
+  .callReason {
+    margin: 5px 0;
+    font-style: italic;
+    color: #cfd6ff;
+  }
+  .status {
+    font-size: 0.9em;
+    padding: 3px 8px;
+    border-radius: 12px;
+    display: inline-block;
+  }
+  .waiting {
+    background: #f39c12;
+    color: black;
+  }
+  .connected {
+    background: #27ae60;
+  }
+  .ended {
+    background: #c0392b;
+  }
+  .buttons {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+  }
+  .buttons button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+  .joinBtn {
+    background: #2980b9;
+    color: white;
+  }
+  .deleteBtn {
+    background: #e74c3c;
+    color: white;
+  }
+</style>
+</head>
+<body>
+<h1>Craven Laura - Incoming Calls</h1>
+<div id="callsList">Loading calls...</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+  import {
+    getFirestore, collection, onSnapshot, deleteDoc, doc, updateDoc
+  } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDzWe0sMFecKa9sHk30pXat5qrT4yDyuJ4",
+    authDomain: "soccer2-c47c2.firebaseapp.com",
+    projectId: "soccer2-c47c2",
+    storageBucket: "soccer2-c47c2.appspot.com",
+    messagingSenderId: "942310698005",
+    appId: "1:942310698005:web:2f5230da671ef0b47db21c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const callsRef = collection(db, "calls");
+  const callsList = document.getElementById("callsList");
+
+  function renderCallItem(callId, data) {
+    const div = document.createElement("div");
+    div.className = "callItem";
+
+    const name = document.createElement("div");
+    name.className = "callName";
+    name.textContent = data.name || "Unknown Caller";
+
+    const reason = document.createElement("div");
+    reason.className = "callReason";
+    reason.textContent = data.reason || "No reason provided";
+
+    const status = document.createElement("span");
+    status.className = "status";
+    if (data.ended) {
+      status.textContent = "Ended";
+      status.classList.add("ended");
+    } else if (data.answer) {
+      status.textContent = "Connected";
+      status.classList.add("connected");
+    } else {
+      status.textContent = "Waiting";
+      status.classList.add("waiting");
+    }
+
+    const buttons = document.createElement("div");
+    buttons.className = "buttons";
+
+    const joinBtn = document.createElement("button");
+    joinBtn.textContent = "Join";
+    joinBtn.className = "joinBtn";
+    joinBtn.onclick = () => {
+      // mark call as answered if not already
+      if (!data.answer) {
+        updateDoc(doc(db, "calls", callId), { answer: true }).catch(console.error);
+      }
+      window.open(`video-room.html?callId=${callId}&role=receiver`, "_blank");
+    };
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.className = "deleteBtn";
+    deleteBtn.onclick = async () => {
+      if (confirm("Delete this call log?")) {
+        await deleteDoc(doc(db, "calls", callId));
+      }
+    };
+
+    buttons.appendChild(joinBtn);
+    buttons.appendChild(deleteBtn);
+
+    div.appendChild(name);
+    div.appendChild(reason);
+    div.appendChild(status);
+    div.appendChild(buttons);
+
+    return div;
+  }
+
+  onSnapshot(callsRef, (snapshot) => {
+    callsList.innerHTML = "";
+    if (snapshot.empty) {
+      callsList.textContent = "No current calls.";
+      return;
+    }
+
+    snapshot.forEach((docSnap) => {
+      const callId = docSnap.id;
+      const callData = docSnap.data();
+      const item = renderCallItem(callId, callData);
+      callsList.appendChild(item);
+    });
+  });
+</script>
+</body>
+</html>
