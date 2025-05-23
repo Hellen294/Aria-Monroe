@@ -24,30 +24,47 @@
       max-width: 400px;
       width: 100%;
     }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
     input, textarea, button {
       width: 100%;
       padding: 10px;
-      margin: 10px 0;
+      margin-top: 5px;
       border: none;
       border-radius: 5px;
+      box-sizing: border-box;
     }
     button {
       background: #f39c12;
       color: white;
       cursor: pointer;
+      margin-top: 15px;
     }
-    button:hover {
+    button:hover:enabled {
       background: #e67e22;
+    }
+    button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
   <form id="callForm">
     <h2>Call Craven Laura</h2>
-    <input type="text" placeholder="Your Name" id="name" required />
-    <input type="email" placeholder="Your Email" id="email" required />
-    <textarea placeholder="Reason for Call" id="reason" required></textarea>
-    <button type="submit">Start Call</button>
+    <label for="name">Your Name</label>
+    <input type="text" id="name" placeholder="Your Name" required />
+
+    <label for="email">Your Email</label>
+    <input type="email" id="email" placeholder="Your Email" required />
+
+    <label for="reason">Reason for Call</label>
+    <textarea id="reason" placeholder="Reason for Call" required></textarea>
+
+    <button type="submit" id="submitBtn">Start Call</button>
   </form>
 
   <script type="module">
@@ -67,20 +84,34 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    document.getElementById("callForm").addEventListener("submit", async (e) => {
+    const form = document.getElementById("callForm");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const name = document.getElementById("name").value;
-      const email = document.getElementById("email").value;
-      const reason = document.getElementById("reason").value;
 
-      const docRef = await addDoc(collection(db, "calls"), {
-        name,
-        email,
-        reason,
-        timestamp: serverTimestamp()
-      });
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Starting...";
 
-      window.location.href = `video-room.html?callId=${docRef.id}`;
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const reason = document.getElementById("reason").value.trim();
+
+      try {
+        const docRef = await addDoc(collection(db, "calls"), {
+          name,
+          email,
+          reason,
+          timestamp: serverTimestamp()
+        });
+
+        window.location.href = `video-room.html?callId=${docRef.id}`;
+      } catch (error) {
+        alert("Failed to start call. Please try again.");
+        console.error("Error adding document: ", error);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Start Call";
+      }
     });
   </script>
 </body>
