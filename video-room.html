@@ -93,50 +93,50 @@
   const endCallBtn = document.getElementById('endCall');
 
   let localStream = null;
-  let remoteStream = null;
+  let remoteStream = new MediaStream();
   let peerConnection = null;
 
   const servers = {
     iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }]
   };
 
-  peerConnection = new RTCPeerConnection(servers);
-
-  peerConnection.onicecandidate = event => {
-    if (event.candidate) {
-      const candidate = event.candidate.toJSON();
-      getDoc(callDocRef).then(docSnap => {
-        const callData = docSnap.data();
-        if (!callData.answer) {
-          addDoc(offerCandidates, candidate);
-        } else {
-          addDoc(answerCandidates, candidate);
-        }
-      });
-    }
-  };
-
-  async function startCall() {
+  async function setupMediaAndConnection() {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    remoteStream = new MediaStream();
+    localVideo.srcObject = localStream;
 
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+    remoteVideo.srcObject = remoteStream;
+
+    peerConnection = new RTCPeerConnection(servers);
+
+    localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, localStream);
+    });
+
     peerConnection.ontrack = event => {
       event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
     };
 
-    localVideo.srcObject = localStream;
-    remoteVideo.srcObject = remoteStream;
+    peerConnection.onicecandidate = event => {
+      if (event.candidate) {
+        const candidate = event.candidate.toJSON();
+        getDoc(callDocRef).then(docSnap => {
+          const callData = docSnap.data();
+          if (!callData?.answer) {
+            addDoc(offerCandidates, candidate);
+          } else {
+            addDoc(answerCandidates, candidate);
+          }
+        });
+      }
+    };
+  }
+
+  async function startCall() {
+    await setupMediaAndConnection();
 
     const offerDescription = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offerDescription);
-
-    const offer = {
-      sdp: offerDescription.sdp,
-      type: offerDescription.type
-    };
-
-    await setDoc(callDocRef, { offer });
+    await setDoc(callDocRef, { offer: offerDescription });
 
     onSnapshot(callDocRef, snapshot => {
       const data = snapshot.data();
@@ -149,71 +149,46 @@
     onSnapshot(answerCandidates, snapshot => {
       snapshot.docChanges().forEach(change => {
         if (change.type === 'added') {
-          const candidate = new RTCIceCandidate(change.doc.data());
-          peerConnection.addIceCandidate(candidate);
+          peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
         }
       });
     });
   }
 
   async function answerCall() {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    remoteStream = new MediaStream();
-
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-    peerConnection.ontrack = event => {
-      event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
-    };
-
-    localVideo.srcObject = localStream;
-    remoteVideo.srcObject = remoteStream;
+    await setupMediaAndConnection();
 
     const callSnap = await getDoc(callDocRef);
     const callData = callSnap.data();
 
-    // Show caller's name and request
     callerInfo.textContent = `Caller: ${callData.name || 'Unknown'} — Request: ${callData.request || 'None'}`;
 
-    const offerDescription = callData.offer;
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(offerDescription));
-
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
     const answerDescription = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answerDescription);
-
-    const answer = {
-      type: answerDescription.type,
-      sdp: answerDescription.sdp
-    };
-
-    await updateDoc(callDocRef, { answer });
+    await updateDoc(callDocRef, { answer: answerDescription });
 
     onSnapshot(offerCandidates, snapshot => {
       snapshot.docChanges().forEach(change => {
         if (change.type === 'added') {
-          const candidate = new RTCIceCandidate(change.doc.data());
-          peerConnection.addIceCandidate(candidate);
+          peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
         }
       });
     });
   }
 
-  // Setup
-  const callSnapshot = await getDoc(callDocRef);
-  if (!callSnapshot.exists()) {
+  // Determine role: caller or receiver
+  const callSnap = await getDoc(callDocRef);
+  if (!callSnap.exists()) {
     startCall();
   } else {
-    const callData = callSnapshot.data();
-    if (callData.answer) {
-      status.textContent = 'Call already connected';
-    } else {
-      answerCall();
-    }
+    answerCall();
   }
 
   endCallBtn.onclick = () => {
     localStream?.getTracks().forEach(track => track.stop());
     remoteStream?.getTracks().forEach(track => track.stop());
-    peerConnection.close();
+    peerConnection?.close();
     status.textContent = 'Call ended';
     window.location.href = 'call.html';
   };
