@@ -40,6 +40,10 @@
     font-style: italic;
     color: #cfd6ff;
   }
+  .timestamp {
+    font-size: 0.8em;
+    color: #a0a8c0;
+  }
   .status {
     font-size: 0.9em;
     padding: 3px 8px;
@@ -76,11 +80,33 @@
     background: #e74c3c;
     color: white;
   }
+
+  /* Highly visible continuous blinking */
+  .blinking {
+    animation: blinkGlow 1s infinite;
+    border: 4px solid #ffcc00;
+    box-shadow: 0 0 15px 5px #ffcc00;
+  }
+  @keyframes blinkGlow {
+    0%, 100% {
+      background-color: #374a75;
+      color: white;
+      box-shadow: 0 0 15px 5px #ffcc00;
+      border-color: #ffcc00;
+    }
+    50% {
+      background-color: #fff8d6;
+      color: black;
+      box-shadow: 0 0 30px 10px #ffd700;
+      border-color: #ffd700;
+    }
+  }
 </style>
 </head>
 <body>
 <h1>Craven Laura - Incoming Calls</h1>
 <div id="callsList">Loading calls...</div>
+<audio id="notificationSound" src="Kelvin_Momo_FtBabalwa_M_Stixx_Nia_Pearl_-_Amalobolo.mp3" preload="auto"></audio>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
@@ -101,6 +127,23 @@
   const db = getFirestore(app);
   const callsRef = collection(db, "calls");
   const callsList = document.getElementById("callsList");
+  const notificationSound = document.getElementById("notificationSound");
+
+  const soundPlayedCalls = new Set();
+
+  function formatTimestamp(ts) {
+    if (!ts) return "No timestamp";
+    let date;
+    // Firestore timestamps can be objects with .seconds or native JS date
+    if (ts.seconds) {
+      date = new Date(ts.seconds * 1000);
+    } else if (ts.toDate) {
+      date = ts.toDate();
+    } else {
+      date = new Date(ts);
+    }
+    return date.toLocaleString();
+  }
 
   function renderCallItem(callId, data) {
     const div = document.createElement("div");
@@ -113,6 +156,11 @@
     const reason = document.createElement("div");
     reason.className = "callReason";
     reason.textContent = data.reason || "No reason provided";
+
+    // Add timestamp display
+    const timestamp = document.createElement("div");
+    timestamp.className = "timestamp";
+    timestamp.textContent = "Received: " + formatTimestamp(data.timestamp);
 
     const status = document.createElement("span");
     status.className = "status";
@@ -133,11 +181,19 @@
     const joinBtn = document.createElement("button");
     joinBtn.textContent = "Join";
     joinBtn.className = "joinBtn";
-    joinBtn.onclick = () => {
-      // mark call as answered if not already
+
+    joinBtn.onclick = async () => {
       if (!data.answer) {
-        updateDoc(doc(db, "calls", callId), { answer: true }).catch(console.error);
+        try {
+          await updateDoc(doc(db, "calls", callId), { answer: true });
+          // Stop the notification sound immediately
+          notificationSound.pause();
+          notificationSound.currentTime = 0;
+        } catch (err) {
+          console.error("Failed to update call answer status:", err);
+        }
       }
+      // Open the video room in a new tab/window
       window.open(`video-room.html?callId=${callId}&role=receiver`, "_blank");
     };
 
@@ -146,7 +202,11 @@
     deleteBtn.className = "deleteBtn";
     deleteBtn.onclick = async () => {
       if (confirm("Delete this call log?")) {
-        await deleteDoc(doc(db, "calls", callId));
+        try {
+          await deleteDoc(doc(db, "calls", callId));
+        } catch (err) {
+          console.error("Failed to delete call:", err);
+        }
       }
     };
 
@@ -155,6 +215,7 @@
 
     div.appendChild(name);
     div.appendChild(reason);
+    div.appendChild(timestamp);
     div.appendChild(status);
     div.appendChild(buttons);
 
@@ -163,18 +224,47 @@
 
   onSnapshot(callsRef, (snapshot) => {
     callsList.innerHTML = "";
-    if (snapshot.empty) {
-      callsList.textContent = "No current calls.";
-      return;
-    }
 
+    let callsArray = [];
     snapshot.forEach((docSnap) => {
-      const callId = docSnap.id;
-      const callData = docSnap.data();
-      const item = renderCallItem(callId, callData);
-      callsList.appendChild(item);
+      callsArray.push({ id: docSnap.id, data: docSnap.data() });
     });
+
+    // Sort by timestamp descending, fallback to id if no timestamp
+    callsArray.sort((a, b) => {
+      const tA = a.data.timestamp ? (a.data.timestamp.seconds || 0) : 0;
+      const tB = b.data.timestamp ? (b.data.timestamp.seconds || 0) : 0;
+      if (tB !== tA) return tB - tA; // newest first
+      // fallback lex order by id
+      return b.id.localeCompare(a.id);
+    });
+
+    let newWaitingCallDetected = false;
+
+    callsArray.forEach(({ id: callId, data: callData }) => {
+      const isWaiting = !callData.answer && !callData.ended;
+
+      if (isWaiting && !soundPlayedCalls.has(callId)) {
+        newWaitingCallDetected = true;
+        soundPlayedCalls.add(callId);
+      }
+
+      const callElement = renderCallItem(callId, callData);
+
+      if (isWaiting) {
+        callElement.classList.add("blinking");
+      }
+
+      callsList.appendChild(callElement);
+    });
+
+    if (newWaitingCallDetected) {
+      notificationSound.play().catch((e) => {
+        console.warn("Notification sound play failed:", e);
+      });
+    }
   });
 </script>
-</body>
+</body
+
 </html>
