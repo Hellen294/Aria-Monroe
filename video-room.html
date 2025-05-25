@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Video Call</title>
+  <title>Enhanced Video Call</title>
   <style>
     body, html {
-      margin: 0; padding: 0; height: 100%;
-      background: linear-gradient(to right, #1e3c72, #2a5298);
-      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: white;
       display: flex;
       flex-direction: column;
@@ -17,6 +19,10 @@
       padding: 10px;
       gap: 10px;
       box-sizing: border-box;
+    }
+    h2 {
+      margin: 10px 0;
+      font-size: 2rem;
     }
     #videos {
       display: flex;
@@ -34,21 +40,24 @@
     }
     #callerInfo, #status {
       margin: 5px 0;
-      font-size: 1.2em;
+      font-size: 1.1rem;
       text-align: center;
       width: 100%;
       max-width: 900px;
       word-break: break-word;
+      background: rgba(255,255,255,0.1);
+      padding: 5px 10px;
+      border-radius: 10px;
     }
     #chat {
       width: 90%;
       max-width: 900px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
       padding: 10px;
       display: flex;
       flex-direction: column;
-      max-height: 200px;
+      max-height: 250px;
       overflow-y: auto;
       font-size: 0.9em;
       color: white;
@@ -57,6 +66,29 @@
       flex-grow: 1;
       overflow-y: auto;
       margin-bottom: 10px;
+    }
+    .chat-message {
+      padding: 6px 10px;
+      margin: 4px 0;
+      border-radius: 8px;
+      max-width: 80%;
+      word-wrap: break-word;
+      position: relative;
+    }
+    .chat-message .timestamp {
+      font-size: 0.7em;
+      opacity: 0.7;
+      position: absolute;
+      bottom: 2px;
+      right: 10px;
+    }
+    .from-caller {
+      align-self: flex-start;
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    .from-receiver {
+      align-self: flex-end;
+      background-color: rgba(243, 156, 18, 0.5);
     }
     #chatInputForm {
       display: flex;
@@ -81,30 +113,59 @@
     #sendChatBtn:hover {
       background: #e67e22;
     }
-    #endCall {
-      padding: 10px 20px;
-      font-size: 1.1em;
-      border: none;
-      border-radius: 8px;
-      background-color: #f39c12;
-      color: white;
-      cursor: pointer;
-      margin-top: 10px;
+    #controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
       max-width: 900px;
       width: 90%;
+      margin-top: 10px;
+    }
+    .control-button {
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background-color: #34495e;
+      color: white;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .control-button:hover {
+      background-color: #2c3e50;
+    }
+    #endCall {
+      background-color: #e74c3c;
     }
     #endCall:hover {
-      background-color: #e67e22;
+      background-color: #c0392b;
+    }
+    select {
+      padding: 5px;
+      border-radius: 6px;
+      font-size: 1em;
     }
   </style>
 </head>
 <body>
-  <h2>Video Call</h2>
+  <h2>Enhanced Video Call</h2>
   <div id="callerInfo">Connecting...</div>
   <div id="status">Setting up call...</div>
   <div id="videos">
     <video id="localVideo" autoplay muted playsinline></video>
     <video id="remoteVideo" autoplay playsinline></video>
+  </div>
+
+  <div id="controls">
+    <button class="control-button" id="toggleAudio">🔇 Mute</button>
+    <button class="control-button" id="toggleVideo">📷 Hide Video</button>
+    <button class="control-button" id="shareScreen">🖥️ Share Screen</button>
+    <select id="audioSelect" class="control-button"></select>
+    <select id="videoSelect" class="control-button"></select>
+    <button class="control-button" id="endCall">❌ End Call</button>
   </div>
 
   <div id="chat">
@@ -115,16 +176,14 @@
     </form>
   </div>
 
-  <button id="endCall">End Call</button>
+  <!-- Script below (Firebase + WebRTC) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, doc, setDoc, getDoc,
+      onSnapshot, updateDoc, arrayUnion
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-  import {
-    getFirestore, doc, getDoc, onSnapshot, collection,
-    addDoc, updateDoc, arrayUnion
-  } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
-
-  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyDzWe0sMFecKa9sHk30pXat5qrT4yDyuJ4",
     authDomain: "soccer2-c47c2.firebaseapp.com",
@@ -134,248 +193,185 @@
     appId: "1:942310698005:web:2f5230da671ef0b47db21c"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  // Get URL params
-  const params = new URLSearchParams(window.location.search);
-  const callId = params.get("callId");
-  const role = params.get("role"); // "caller" or "receiver"
+    const urlParams = new URLSearchParams(location.search);
+    const role = urlParams.get("role"); // caller or receiver
+    const callId = urlParams.get("callId");
 
-  if (!callId || !role) {
-    alert("Missing call ID or role.");
-    throw new Error("Missing call ID or role");
-  }
+    const callDoc = doc(db, "calls", callId);
+    const offerCandidates = doc(db, `calls/${callId}/offerCandidates/temp`);
+    const answerCandidates = doc(db, `calls/${callId}/answerCandidates/temp`);
 
-  const callDocRef = doc(db, "calls", callId);
-  const offerCandidatesCol = collection(callDocRef, "offerCandidates");
-  const answerCandidatesCol = collection(callDocRef, "answerCandidates");
+    const localVideo = document.getElementById("localVideo");
+    const remoteVideo = document.getElementById("remoteVideo");
+    const messages = document.getElementById("messages");
+    const msgInput = document.getElementById("msgInput");
+    const sendMsg = document.getElementById("sendMsg");
+    const statusMsg = document.getElementById("statusMsg");
 
-  // UI Elements
-  const localVideo = document.getElementById("localVideo");
-  const remoteVideo = document.getElementById("remoteVideo");
-  const statusEl = document.getElementById("status");
-  const callerInfoEl = document.getElementById("callerInfo");
-  const endCallBtn = document.getElementById("endCall");
-  const chatMessagesEl = document.getElementById("chatMessages");
-  const chatInputForm = document.getElementById("chatInputForm");
-  const chatInput = document.getElementById("chatInput");
+    const toggleMic = document.getElementById("toggleMic");
+    const toggleCam = document.getElementById("toggleCam");
+    const shareScreen = document.getElementById("shareScreen");
+    const audioSelect = document.getElementById("audioSelect");
+    const videoSelect = document.getElementById("videoSelect");
 
-  let localStream = null;
-  let remoteStream = null;
-  let pc = null;
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
 
-  const servers = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" }
-    ]
-  };
+    let localStream;
 
-  // Helpers
-  function logStatus(text) {
-    statusEl.textContent = text;
-  }
-
-  function appendChatMessage(text, fromMe) {
-    const msg = document.createElement("div");
-    msg.textContent = text;
-    msg.style.padding = "3px 6px";
-    msg.style.marginBottom = "3px";
-    msg.style.backgroundColor = fromMe ? "rgba(243,156,18,0.5)" : "rgba(255,255,255,0.2)";
-    msg.style.borderRadius = "6px";
-    chatMessagesEl.appendChild(msg);
-    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-  }
-
-  // Load caller info to display
-  async function loadCallerInfo() {
-    const docSnap = await getDoc(callDocRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      callerInfoEl.textContent = `Caller: ${data.name || "Unknown"} - Reason: ${data.reason || "No reason"}`;
-    } else {
-      callerInfoEl.textContent = "Call info not found.";
+    async function loadDevices() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      audioSelect.innerHTML = "";
+      videoSelect.innerHTML = "";
+      devices.forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d.deviceId;
+        opt.text = d.label || d.kind;
+        if (d.kind === "audioinput") audioSelect.appendChild(opt);
+        if (d.kind === "videoinput") videoSelect.appendChild(opt);
+      });
     }
-  }
 
-  // Start local media
-  async function startLocalStream() {
-    try {
+    async function initStream() {
       localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
       localVideo.srcObject = localStream;
-      logStatus("Local stream started.");
-    } catch (err) {
-      alert("Could not start video/audio: " + err.message);
-      throw err;
     }
-  }
 
-  // Create peer connection & add event handlers
-  function createPeerConnection() {
-    pc = new RTCPeerConnection(servers);
-
-    remoteStream = new MediaStream();
-    remoteVideo.srcObject = remoteStream;
-
-    // Add local tracks to peer connection
-    localStream.getTracks().forEach(track => {
-      pc.addTrack(track, localStream);
-    });
-
-    // On remote track
-    pc.ontrack = event => {
-      event.streams[0].getTracks().forEach(track => {
-        remoteStream.addTrack(track);
-      });
+    pc.ontrack = e => {
+      if (!remoteVideo.srcObject) {
+        remoteVideo.srcObject = e.streams[0];
+        statusMsg.textContent = "✅ Connected";
+      }
     };
 
-    // On ICE candidate - send to Firestore
-    pc.onicecandidate = event => {
-      if (event.candidate) {
-        const candidate = event.candidate.toJSON();
-        if (role === "caller") {
-          addDoc(offerCandidatesCol, candidate).catch(console.error);
-        } else {
-          addDoc(answerCandidatesCol, candidate).catch(console.error);
-        }
+    pc.onicecandidate = e => {
+      if (e.candidate) {
+        const ref = role === "caller" ? offerCandidates : answerCandidates;
+        updateDoc(ref, { candidates: arrayUnion(e.candidate.toJSON()) });
       }
     };
-  }
 
-  // Caller creates offer
-  async function callerStartCall() {
-    logStatus("Creating offer...");
-    createPeerConnection();
+    sendMsg.onclick = async () => {
+      const txt = msgInput.value.trim();
+      if (txt) {
+        await updateDoc(callDoc, {
+          messages: arrayUnion({ sender: role, text: txt, time: Date.now() })
+        });
+        msgInput.value = "";
+      }
+    };
 
-    // Create offer
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+    onSnapshot(callDoc, snap => {
+      const data = snap.data();
+      if (data?.messages) {
+        messages.innerHTML = "";
+        data.messages.forEach(m => {
+          const div = document.createElement("div");
+          div.className = "message " + (m.sender === "caller" ? "caller" : "receiver");
+          div.textContent = m.text;
+          messages.appendChild(div);
+        });
+        messages.scrollTop = messages.scrollHeight;
+      }
+    });
 
-    // Save offer to Firestore
-    await updateDoc(callDocRef, { offer: { type: offer.type, sdp: offer.sdp } });
+    toggleMic.onclick = () => {
+      const track = localStream.getAudioTracks()[0];
+      track.enabled = !track.enabled;
+      toggleMic.textContent = track.enabled ? "🔊 Mute" : "🔇 Unmute";
+    };
 
-    // Listen for answer
-    onSnapshot(callDocRef, (docSnap) => {
-      const data = docSnap.data();
-      if (!pc.currentRemoteDescription && data?.answer) {
-        const answerDesc = new RTCSessionDescription(data.answer);
-        pc.setRemoteDescription(answerDesc).then(() => {
-          logStatus("Call connected.");
+    toggleCam.onclick = () => {
+      const track = localStream.getVideoTracks()[0];
+      track.enabled = !track.enabled;
+      toggleCam.textContent = track.enabled ? "🎥 Off" : "📷 On";
+    };
+
+    shareScreen.onclick = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const screenTrack = stream.getVideoTracks()[0];
+        const sender = pc.getSenders().find(s => s.track.kind === "video");
+        await sender.replaceTrack(screenTrack);
+        localVideo.srcObject = stream;
+        screenTrack.onended = async () => {
+          const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const camTrack = camStream.getVideoTracks()[0];
+          await sender.replaceTrack(camTrack);
+          localVideo.srcObject = localStream;
+        };
+      } catch (e) {
+        alert("Screen share failed.");
+      }
+    };
+
+    audioSelect.onchange = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: audioSelect.value } } });
+      const newTrack = stream.getAudioTracks()[0];
+      const sender = pc.getSenders().find(s => s.track.kind === "audio");
+      sender.replaceTrack(newTrack);
+    };
+
+    videoSelect.onchange = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: videoSelect.value } } });
+      const newTrack = stream.getVideoTracks()[0];
+      const sender = pc.getSenders().find(s => s.track.kind === "video");
+      sender.replaceTrack(newTrack);
+      localVideo.srcObject = stream;
+    };
+
+    async function startCall() {
+      await loadDevices();
+      await initStream();
+
+      if (role === "caller") {
+        await setDoc(callDoc, { messages: [] });
+        await setDoc(offerCandidates, { candidates: [] });
+        await setDoc(answerCandidates, { candidates: [] });
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await updateDoc(callDoc, { offer });
+
+        onSnapshot(callDoc, snap => {
+          const data = snap.data();
+          if (data?.answer && !pc.currentRemoteDescription) {
+            pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+          }
+        });
+
+        onSnapshot(answerCandidates, snap => {
+          const data = snap.data();
+          if (data?.candidates) {
+            data.candidates.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)));
+          }
+        });
+      } else {
+        onSnapshot(callDoc, async snap => {
+          const data = snap.data();
+          if (data?.offer && !pc.currentRemoteDescription) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await updateDoc(callDoc, { answer });
+          }
+        });
+
+        onSnapshot(offerCandidates, snap => {
+          const data = snap.data();
+          if (data?.candidates) {
+            data.candidates.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)));
+          }
         });
       }
-      if (data?.ended) {
-        logStatus("Call ended by other side.");
-        endCall();
-      }
-    });
-
-    // Listen for remote ICE candidates
-    onSnapshot(answerCandidatesCol, (snapshot) => {
-      snapshot.docChanges().forEach(change => {
-        if (change.type === "added") {
-          const candidate = new RTCIceCandidate(change.doc.data());
-          pc.addIceCandidate(candidate).catch(console.error);
-        }
-      });
-    });
-  }
-
-  // Receiver answers call
-  async function receiverAnswerCall() {
-    logStatus("Answering call...");
-    createPeerConnection();
-
-    // Get offer from Firestore
-    const callDoc = await getDoc(callDocRef);
-    const offer = callDoc.data().offer;
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-
-    // Create answer
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    // Save answer to Firestore
-    await updateDoc(callDocRef, { answer: { type: answer.type, sdp: answer.sdp } });
-
-    // Listen for remote ICE candidates
-    onSnapshot(offerCandidatesCol, (snapshot) => {
-      snapshot.docChanges().forEach(change => {
-        if (change.type === "added") {
-          const candidate = new RTCIceCandidate(change.doc.data());
-          pc.addIceCandidate(candidate).catch(console.error);
-        }
-      });
-    });
-
-    // Listen for call end
-    onSnapshot(callDocRef, (docSnap) => {
-      const data = docSnap.data();
-      if (data?.ended) {
-        logStatus("Call ended by other side.");
-        endCall();
-      }
-    });
-  }
-
-  // Setup chat
-  function setupChat() {
-    // Load existing chat
-    onSnapshot(callDocRef, (docSnap) => {
-      const data = docSnap.data();
-      if (data?.chat) {
-        chatMessagesEl.innerHTML = "";
-        data.chat.forEach(msg => {
-          appendChatMessage(msg.text, msg.from === role);
-        });
-      }
-    });
-
-    chatInputForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const text = chatInput.value.trim();
-      if (!text) return;
-      chatInput.value = "";
-
-      // Add chat message to Firestore
-      await updateDoc(callDocRef, {
-        chat: arrayUnion({ text, from: role, timestamp: Date.now() })
-      });
-    });
-  }
-
-  // End call
-  async function endCall() {
-    if (pc) {
-      pc.close();
-      pc = null;
     }
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-    }
-    logStatus("Call ended.");
-    // Mark call ended in Firestore
-    await updateDoc(callDocRef, { ended: true });
-    endCallBtn.disabled = true;
-  }
 
-  endCallBtn.addEventListener("click", endCall);
-
-  async function init() {
-    await loadCallerInfo();
-    await startLocalStream();
-    setupChat();
-
-    if (role === "caller") {
-      await callerStartCall();
-    } else {
-      await receiverAnswerCall();
-    }
-  }
-
-  init().catch(err => {
-    console.error(err);
-    alert("Error initializing call: " + err.message);
-  });
-</script>
+    startCall();
+  </script>
 </body>
 </html>
