@@ -1,54 +1,123 @@
 <!DOCTYPE html>
-<html>
-<head><title>Caller</title></head>
-<body>
-  <h2>Caller</h2>
-  <video id="localVideo" autoplay muted playsinline></video>
-  <video id="remoteVideo" autoplay playsinline></video>
-  <button onclick="startCall()">Start Call</button>
-
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="firebase.js"></script>
-
-  <script>
-    const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
-    const callId = 'call123';
-    let localStream;
-    let pc = new RTCPeerConnection();
-
-    async function startCall() {
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      localVideo.srcObject = localStream;
-
-      pc.onicecandidate = e => {
-        if (e.candidate) {
-          database.ref(`calls/${callId}/callerCandidates`).push(e.candidate.toJSON());
-        }
-      };
-
-      pc.ontrack = e => {
-        remoteVideo.srcObject = e.streams[0];
-      };
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      database.ref(`calls/${callId}`).set({ offer });
-
-      database.ref(`calls/${callId}/answer`).on('value', async snapshot => {
-        const answer = snapshot.val();
-        if (answer) {
-          await pc.setRemoteDescription(new RTCSessionDescription(answer));
-        }
-      });
-
-      database.ref(`calls/${callId}/receiverCandidates`).on('child_added', snapshot => {
-        const candidate = new RTCIceCandidate(snapshot.val());
-        pc.addIceCandidate(candidate);
-      });
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Call Craven Laura</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background: linear-gradient(to bottom right, #1e3c72, #2a5298);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
+    form {
+      background: rgba(255,255,255,0.1);
+      padding: 30px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      max-width: 400px;
+      width: 100%;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: none;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #f39c12;
+      color: white;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:hover:enabled {
+      background: #e67e22;
+    }
+    button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <form id="callForm">
+    <h2>Call Craven Laura</h2>
+    <label for="name">Your Name</label>
+    <input type="text" id="name" placeholder="Your Name" required />
+
+    <label for="email">Your Email</label>
+    <input type="email" id="email" placeholder="Your Email" required />
+
+    <label for="reason">Reason for Call</label>
+    <textarea id="reason" placeholder="Reason for Call" required></textarea>
+
+    <button type="submit" id="submitBtn">Start Call</button>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import {
+      getFirestore, addDoc, collection, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzWe0sMFecKa9sHk30pXat5qrT4yDyuJ4",
+      authDomain: "soccer2-c47c2.firebaseapp.com",
+      projectId: "soccer2-c47c2",
+      storageBucket: "soccer2-c47c2.appspot.com",
+      messagingSenderId: "942310698005",
+      appId: "1:942310698005:web:2f5230da671ef0b47db21c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("callForm");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Starting...";
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const reason = document.getElementById("reason").value.trim();
+
+      try {
+        // Add a new call document with caller info & status
+        const docRef = await addDoc(collection(db, "calls"), {
+          name,
+          email,
+          reason,
+          timestamp: serverTimestamp(),
+          answer: null,
+          ended: false,
+          chat: [] // optional for initial empty chat history
+        });
+
+        // Redirect to video call page with callId param
+        window.location.href = `video-room.html?callId=${docRef.id}&role=caller`;
+      } catch (error) {
+        alert("Failed to start call. Please try again.");
+        console.error("Error adding document: ", error);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Start Call";
+      }
+    });
   </script>
 </body>
 </html>
